@@ -54,7 +54,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 		self.plugin_registry.clear()
 		self.set_state(PluginState.READY)
 		self.__register_event_listeners()
-		self.__register_help_messages()
+		# self.__register_help_messages()
 		self.__register_commands()
 
 	def __register_event_listeners(self):
@@ -78,63 +78,60 @@ class MCDReforgedPlugin(PermanentPlugin):
 
 	def __register_commands(self):
 		self.register_command(
-			Literal(self.get_control_command_prefix()).
+			Literal(self.get_control_command_prefix()).with_help(self.tr('mcdr_command.help_message.mcdr_command'), PermissionLevel.MCDR_CONTROL_LEVEL).
 			requires(lambda src: src.has_permission(PermissionLevel.MCDR_CONTROL_LEVEL)).
-			runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message'))).
+			# runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message'))).
 			on_error(RequirementNotMet, self.on_mcdr_command_permission_denied, handled=True).
 			on_error(UnknownArgument, self.on_mcdr_command_unknown_argument, handled=True).
 			then(
-				Literal({'r', 'reload'}).
-				runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_reload'))).
+				Literal('reload', 'r').with_help(self.tr('mcdr_command.help_message_reload')).
+				# runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_reload'))).
 				on_error(UnknownArgument, self.on_mcdr_command_unknown_argument).
-				then(Literal({'plugin', 'plg'}).runs(self.refresh_changed_plugins)).
-				then(Literal({'config', 'cfg'}).runs(self.reload_config)).
-				then(Literal({'permission', 'perm'}).runs(self.reload_permission)).
-				then(Literal('all').runs(self.reload_all))
+				then(Literal('plugin', 'plg').runs(self.refresh_changed_plugins).with_help(self.tr('mcdr_command.help_message_reload.plugin'))).
+				then(Literal('config', 'cfg').runs(self.reload_config).with_help(self.tr('mcdr_command.help_message_reload.config'))).
+				then(Literal('permission', 'perm').runs(self.reload_permission).with_help(self.tr('mcdr_command.help_message_reload.permission'))).
+				then(Literal('all').runs(self.reload_all).with_help(self.tr('mcdr_command.help_message_reload.all')))
 			).
 			then(
-				Literal('status').runs(self.print_mcdr_status)
+				Literal('status').runs(self.print_mcdr_status).with_help(self.tr('mcdr_command.help_message_status'))
 			).
 			then(
-				Literal({'permission', 'perm'}).
-				runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_permission'))).
-				on_error(UnknownArgument, self.on_mcdr_command_unknown_argument).
-				then(
-					Literal('list').runs(lambda src: self.list_permission(src, None)).
+				Literal('permission', 'perm').with_help(self.tr('mcdr_command.help_message_permission')).
+				# runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_permission'))).
+				on_error(UnknownArgument, self.on_mcdr_command_unknown_argument).then(
+					Literal('list').runs(lambda src: self.list_permission(src, None)).with_help(self.tr('mcdr_command.help_message_permission.list')).
 					then(Text('level').runs(lambda src, ctx: self.list_permission(src, ctx['level'])))
 				).
-				then(Literal('set').then(QuotableText('player').then(Text('level').runs(lambda src, ctx: self.set_player_permission(src, ctx['player'], ctx['level']))))).
+				then(Literal('set').with_help(self.tr('mcdr_command.help_message_permission.set')).then(QuotableText('player').then(Text('level').runs(lambda src, ctx: self.set_player_permission(src, ctx['player'], ctx['level']))))).
 				then(
-					Literal({'query', 'q'}).runs(lambda src: self.query_self_permission(src)).
+					Literal('query', 'q').runs(lambda src: self.query_self_permission(src)).
+					with_help(self.tr('mcdr_command.help_message_permission.query')).
 					then(QuotableText('player').runs(lambda src, ctx: self.query_player_permission(src, ctx['player'])))
 				).
-				then(Literal({'remove', 'rm'}).then(QuotableText('player').runs(lambda src, ctx: self.remove_player_permission(src, ctx['player'])))).
-				then(Literal({'setdefault', 'setd'}).then(Text('level').runs(lambda src, ctx: self.set_default_permission(src, ctx['level']))))
+				then(Literal('remove', 'rm').with_help(self.tr('mcdr_command.help_message_permission.remove')).then(QuotableText('player').runs(lambda src, ctx: self.remove_player_permission(src, ctx['player'])))).
+				then(Literal('setdefault', 'setd').with_help(self.tr('mcdr_command.help_message_permission.setdefault')).then(Text('level').runs(lambda src, ctx: self.set_default_permission(src, ctx['level']))))
 			).
 			then(
-				Literal({'plugin', 'plg'}).
-				runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_plugin'))).
+				Literal('plugin', 'plg').with_help(self.tr('mcdr_command.help_message_plugin')).
+				# runs(lambda src: src.reply(self.get_help_message('mcdr_command.help_message_plugin'))).
 				on_error(UnknownArgument, self.on_mcdr_command_unknown_argument).
-				then(Literal('list').runs(self.list_plugin)).
-				then(Literal('info').then(GreedyText('plugin_id').runs(lambda src, ctx: self.show_plugin_info(src, ctx['plugin_id'])))).
-				then(Literal('load').then(GreedyText('file_name').runs(lambda src, ctx: self.load_plugin(src, ctx['file_name'])))).
-				then(Literal('enable').then(GreedyText('file_name').runs(lambda src, ctx: self.enable_plugin(src, ctx['file_name'])))).
-				then(Literal('reload').then(GreedyText('plugin_id').runs(lambda src, ctx: self.reload_plugin(src, ctx['plugin_id'])))).
-				then(Literal('unload').then(GreedyText('plugin_id').runs(lambda src, ctx: self.unload_plugin(src, ctx['plugin_id'])))).
-				then(Literal('disable').then(GreedyText('plugin_id').runs(lambda src, ctx: self.disable_plugin(src, ctx['plugin_id'])))).
-				then(Literal({'reloadall', 'ra'}).runs(self.reload_all_plugin))
+				then(Literal('list').runs(self.list_plugin).with_help(self.tr('mcdr_command.help_message_plugin.list'))).
+				then(Literal('info').with_help(self.tr('mcdr_command.help_message_plugin.info')).then(GreedyText('plugin_id').runs(lambda src, ctx: self.show_plugin_info(src, ctx['plugin_id'])))).
+				then(Literal('load').with_help(self.tr('mcdr_command.help_message_plugin.load')).then(GreedyText('file_name').runs(lambda src, ctx: self.load_plugin(src, ctx['file_name'])))).
+				then(Literal('enable').with_help(self.tr('mcdr_command.help_message_plugin.enable')).then(GreedyText('file_name').runs(lambda src, ctx: self.enable_plugin(src, ctx['file_name'])))).
+				then(Literal('reload').with_help(self.tr('mcdr_command.help_message_plugin.reload')).then(GreedyText('plugin_id').runs(lambda src, ctx: self.reload_plugin(src, ctx['plugin_id'])))).
+				then(Literal('unload').with_help(self.tr('mcdr_command.help_message_plugin.unload')).then(GreedyText('plugin_id').runs(lambda src, ctx: self.unload_plugin(src, ctx['plugin_id'])))).
+				then(Literal('disable').with_help(self.tr('mcdr_command.help_message_plugin.disable')).then(GreedyText('plugin_id').runs(lambda src, ctx: self.disable_plugin(src, ctx['plugin_id'])))).
+				then(Literal('reloadall', 'ra').runs(self.reload_all_plugin).with_help(self.tr('mcdr_command.help_message_plugin.reloadall')))
 			).
 			then(
-				Literal({'checkupdate', 'cu'}).runs(lambda src: self.mcdr_server.update_helper.check_update(condition_check=lambda: True, reply_func=src.reply))
+				Literal('checkupdate', 'cu').with_help(self.tr('mcdr_command.checkupdate')).runs(lambda src: self.mcdr_server.update_helper.check_update(condition_check=lambda: True, reply_func=src.reply))
 			)
 		)
 		self.register_command(
-			Literal(self.get_help_command_prefix()).
-			runs(self.process_help_command).
-			then(
-				Integer('page').at_min(1).
-				runs(self.process_help_command)
-			)
+			Literal(self.get_help_command_prefix()).runs(self.process_help_command).
+			with_help(self.tr('mcdr_command.help_message.help_command'), PermissionLevel.MINIMUM_LEVEL).
+			then(Integer('page').at_min(1).runs(self.process_help_command))
 		)
 
 	# ==============================
@@ -145,15 +142,15 @@ class MCDReforgedPlugin(PermanentPlugin):
 	def can_see_rtext(source: CommandSource):
 		return source.is_player
 
-	def get_help_message(self, translation_key):
-		lst = RTextList()
-		for line in self.tr(translation_key).splitlines(keepends=True):
-			prefix = re.search(r'(?<=§7)!!MCDR[\w ]*(?=§)', line)
-			if prefix is not None:
-				lst.append(RText(line).c(RAction.suggest_command, prefix.group()))
-			else:
-				lst.append(line)
-		return lst
+	# def get_help_message(self, translation_key):
+	# 	lst = RTextList()
+	# 	for line in self.tr(translation_key).splitlines(keepends=True):
+	# 		prefix = re.search(r'(?<=§7)!!MCDR[\w ]*(?=§)', line)
+	# 		if prefix is not None:
+	# 			lst.append(RText(line).c(RAction.suggest_command, prefix.group()))
+	# 		else:
+	# 			lst.append(line)
+	# 	return lst
 
 	def on_mcdr_command_permission_denied(self, source: CommandSource, error: CommandError):
 		source.reply(RText(self.mcdr_server.tr('mcdr_command.permission_denied'), color=RColor.red))
@@ -462,19 +459,19 @@ class MCDReforgedPlugin(PermanentPlugin):
 	#   Help Message things
 	# =======================
 
-	def __register_help_messages(self):
-		self.register_help_message(HelpMessage(
-			self,
-			self.get_control_command_prefix(),
-			self.plugin_manager.mcdr_server.tr('mcdr_command.help_message.mcdr_command'),
-			PermissionLevel.MCDR_CONTROL_LEVEL
-		))
-		self.register_help_message(HelpMessage(
-			self,
-			self.get_help_command_prefix(),
-			self.plugin_manager.mcdr_server.tr('mcdr_command.help_message.help_command'),
-			PermissionLevel.MINIMUM_LEVEL
-		))
+	# def __register_help_messages(self):
+	# 	self.register_help_message(HelpMessage(
+	# 		self,
+	# 		self.get_control_command_prefix(),
+	# 		self.plugin_manager.mcdr_server.tr('mcdr_command.help_message.mcdr_command'),
+	# 		PermissionLevel.MCDR_CONTROL_LEVEL
+	# 	))
+	# 	self.register_help_message(HelpMessage(
+	# 		self,
+	# 		self.get_help_command_prefix(),
+	# 		self.plugin_manager.mcdr_server.tr('mcdr_command.help_message.help_command'),
+	# 		PermissionLevel.MINIMUM_LEVEL
+	# 	))
 
 	def process_help_command(self, source: CommandSource, context: dict):
 		page = context.get('page')
@@ -492,11 +489,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 		for i in range(left, right):
 			if 0 <= i < matched_count:
 				msg = matched[i]
-				source.reply(RTextList(
-					RText(msg.prefix, color=RColor.gray).c(RAction.suggest_command, msg.prefix),
-					': ',
-					msg.message
-				))
+				source.reply(msg.to_rtext())
 
 		if page is not None:
 			has_prev = 0 < left < matched_count
