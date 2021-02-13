@@ -2,7 +2,7 @@ import collections
 from typing import Dict, List, Callable, Any, TYPE_CHECKING
 
 from mcdreforged.command.builder.command_node import Literal
-from mcdreforged.minecraft.rtext import RTextBase
+from mcdreforged.minecraft.rtext import RTextBase, RText, RTextList, RColor, RAction
 from mcdreforged.plugin.plugin_event import EventListener
 
 if TYPE_CHECKING:
@@ -29,6 +29,13 @@ class HelpMessage:
 
 	def __repr__(self):
 		return 'HelpMessage[prefix={},message={},permission={}]'.format(self.prefix, self.message, self.permission)
+
+	def to_rtext(self) -> RTextBase:
+		return RTextList(
+			RText(self.prefix, RColor.gray).c(RAction.suggest_command, self.prefix)
+			.h(RTextList(RText(self.prefix, RColor.gray), f': {self.plugin.get_name()}')),
+			' ', self.message
+		)
 
 
 class PluginCommandNode:
@@ -67,6 +74,8 @@ class PluginRegistry(AbstractPluginRegistry):
 		if not isinstance(node, Literal):
 			raise TypeError('Only Literal node is accepted to be a root node')
 		self.command_roots.append(PluginCommandNode(self.plugin, node))
+		for msg in node.help_messages:
+			self.help_messages.append(HelpMessage(self.plugin, node.literals[0], msg[0], msg[1]))
 
 
 class PluginRegistryStorage(AbstractPluginRegistry):
