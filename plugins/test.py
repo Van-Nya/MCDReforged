@@ -11,53 +11,34 @@ def on_load(server: ServerInterface, prev):
 	server.register_command(Literal('req1').requires(lambda: False))
 	server.register_command(Literal('req2').requires(lambda: False, failure_message_getter=lambda: "as"))
 	server.register_command(
-		Literal('!!!root')
-		.requires(lambda src: src.has_permission(2))
-		.add_help_message('Command help message test', 2)
-		.then(
-			Text('string')
-			.add_help_message('§6<string>§3 <mode>§r Print string formatted by mode')
-			.then(
-				Literal('raw', 'r')
-				.add_help_message('Print raw string')
-				.runs(lambda src, ctx: src.reply(ctx['string']))
+		Literal('!!!root').requires(lambda src: src.has_permission(2))
+		.with_help('Command help message test', 2).then(
+			Text('string').with_help('§6<string>§3 <mode>§r Print string formatted by mode').then(
+				Literal('raw', 'r').runs(lambda src, ctx: src.reply(ctx['string'])).with_help('Print raw string')
 			).then(
-				Literal('reverse', 'rev')
-				.requires(lambda src: src.has_permission(3))
-				.add_help_message('Print reversed string', 3)
-				.runs(lambda src, ctx: src.reply(ctx['string'][::-1]))
+				Literal('reverse', 'rev').runs(lambda src, ctx: src.reply(ctx['string'][::-1]))
+				.requires(lambda src: src.has_permission(3)).with_help('Print reversed string', 3)
 			).then(
-				Literal('random', 'ran')
-				.requires(lambda src: src.has_permission(4))
-				.add_help_message('Print random ordered string', 4)
-				.runs(lambda src, ctx: src.reply(ranstr(ctx['string'])))
+				Literal('random', 'ran').runs(lambda src, ctx: src.reply(ranstr(ctx['string'])))
+				.requires(lambda src: src.has_permission(4)).with_help('Print random ordered string', 4)
 			)
 		).then(
-			Literal('node1', 'n1')
-			.add_help_message(RText('Here is node 1').h('!!!root §ln1§r'))
-			.then(
-				Literal('node11', 'n11')
-				.add_help_message(RText('Here is node 11').h('!!!root §ln1 n11§r'))
+			Literal('node1', 'n1').with_help(RText('Here is node 1').h('!!!root §ln1§r')).then(
+				Literal('node11', 'n11').with_help(RText('Here is node 11').h('!!!root §ln1 n11§r'))
 				.runs(lambda src: src.reply('You have reached an end node: n11'))
 			).then(
-				Literal('node12', 'n12')
-				.add_help_message(RText('Here is node 12').h('!!!root §ln1 n12§r'))
+				Literal('node12', 'n12').with_help(RText('Here is node 12').h('!!!root §ln1 n12§r'))
 				.runs(lambda src: src.reply('You have reached an end node: n12'))
 			)
 		).then(
-			Literal('node2', 'n2')
-			.requires(lambda src: src.has_permission(3))
-			.add_help_message(RText('Here is node 2').h('!!!root §ln2§r'), 3)
-			.add_help_message(
+			Literal('node2', 'n2').requires(lambda src: src.has_permission(3))
+			.with_help(RText('Here is node 2').h('!!!root §ln2§r'), 3).with_help(
 				RText('Here is also node 2')
 				.h('You discovered me, click me to run')
 				.c(RAction.run_command, '!!!root n2'), 3
 			).then(
-				Literal('node21', 'n21')
-				.add_help_message(RText('Here is node 21').h('!!!root §ln2 n21§r'))
-				.then(
-					Literal('node211', 'n211')
-					.add_help_message(RText('Here is node 211').h('!!!root §ln2 n21 n211§r'))
+				Literal('node21', 'n21').with_help(RText('Here is node 21').h('!!!root §ln2 n21§r')).then(
+					Literal('node211', 'n211').with_help(RText('Here is node 211').h('!!!root §ln2 n21 n211§r'))
 					.runs(lambda src: src.reply('You have reached another end node: n211'))
 				)
 			)
