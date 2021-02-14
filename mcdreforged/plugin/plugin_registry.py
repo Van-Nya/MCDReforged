@@ -34,7 +34,7 @@ class HelpMessage:
 		return RTextList(
 			RText(self.prefix, RColor.gray).c(RAction.suggest_command, self.prefix)
 			.h(RTextList(RText(self.prefix, RColor.gray), f': {self.plugin.get_name()}')),
-			' ', self.message
+			': ', self.message
 		)
 
 
@@ -75,7 +75,7 @@ class PluginRegistry(AbstractPluginRegistry):
 			raise TypeError('Only Literal node is accepted to be a root node')
 		self.command_roots.append(PluginCommandNode(self.plugin, node))
 		for msg in node.help_messages:
-			self.help_messages.append(HelpMessage(self.plugin, node.literals[0], msg[0], msg[1]))
+			self.help_messages.append(HelpMessage(self.plugin, node.name, msg[0], msg[1]))
 
 
 class PluginRegistryStorage(AbstractPluginRegistry):
