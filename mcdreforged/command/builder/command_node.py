@@ -1,7 +1,7 @@
 import collections
 import inspect
 from abc import ABC
-from typing import List, Callable, Iterable, Set, Dict, Type, Any, Union, Optional
+from typing import List, Callable, Iterable, Dict, Type, Any, Union, Optional
 
 from mcdreforged.command.builder import command_builder_util as utils
 from mcdreforged.command.builder.exception import LiteralNotMatch, NumberOutOfRange, EmptyText, \
@@ -9,6 +9,8 @@ from mcdreforged.command.builder.exception import LiteralNotMatch, NumberOutOfRa
 	CommandError, InvalidNumber, InvalidInteger, InvalidFloat, UnclosedQuotedString, IllegalEscapesUsage, \
 	TextLengthOutOfRange
 from mcdreforged.command.command_source import CommandSource
+from mcdreforged.minecraft.rtext import *
+from mcdreforged.permission.permission_level import PermissionLevel
 
 SOURCE_CONTEXT_CALLBACK = Union[Callable[[], Any], Callable[[CommandSource], Any], Callable[[CommandSource, dict], Any]]
 SOURCE_CONTEXT_CALLBACK_BOOL = Union[Callable[[], bool], Callable[[CommandSource], bool], Callable[[CommandSource, dict], bool]]
@@ -34,6 +36,7 @@ class ArgumentNode:
 		self.name = name
 		self.children_literal = collections.defaultdict(list)  # type: Dict[str, List[Literal]]
 		self.children = []  # type: List[ArgumentNode]
+		self.help_messages = []  # type: List[tuple[Union[str, RTextBase], int]]
 		self.callback = None
 		self.error_handlers = {}  # type: ArgumentNode._ERROR_HANDLER_TYPE
 		self.child_error_handlers = {}  # type: ArgumentNode._ERROR_HANDLER_TYPE
@@ -91,6 +94,17 @@ class ArgumentNode:
 		if self.has_children():
 			raise IllegalNodeOperation('Node with children nodes is not allowed to be redirected')
 		self.redirect_node = redirect_node
+		return self
+
+	def with_help(self, message: Union[str, RTextBase], permission: int = PermissionLevel.MINIMUM_LEVEL) -> 'ArgumentNode':
+		"""
+		Add a help message to the current node, which used in command of parent node
+
+		:param message: The help message what you want to add, support RText
+		:param permission: The minimum permission level for the user to see this help message. With default, anyone can see this message
+		:rtype: ArgumentNode
+		"""
+		self.help_messages.append((message, permission))
 		return self
 
 	def on_error(self, error_type: Type[CommandError], handler: SOURCE_ERROR_CONTEXT_CALLBACK, *, handled: bool = False) -> 'ArgumentNode':
@@ -169,6 +183,17 @@ class ArgumentNode:
 		self.__handle_error(source, error, context, self.error_handlers)
 		raise error
 
+	def __gen_help_msg(self, command: str):
+		output = []  # type: List[tuple[RTextBase, int]]
+		for key_names, val_lits in self.children_literal.items():
+			for lit in val_lits:
+				for msg in lit.help_messages:
+					output.append((RTextList(RText(command, RColor.gray), ': ', msg[0]), msg[1]))
+		for child in self.children:
+			for msg in child.help_messages:
+				output.append((RTextList(RText(command, RColor.gray), ': ', msg[0]), msg[1]))
+		return output
+
 	def _execute(self, source, command: str, remaining: str, context: dict):
 		success_read = len(command) - len(remaining)
 		try:
@@ -192,9 +217,13 @@ class ArgumentNode:
 
 			# Parsing finished
 			if len(trimmed_remaining) == 0:
+				output = self.__gen_help_msg(command)
+				for msg in output:
+					if source.has_permission(msg[1]):
+						source.reply(msg[0])
 				if self.callback is not None:
 					self.__smart_callback(self.callback, source, context)
-				else:
+				elif not bool(output):
 					self.__raise_error(source, UnknownCommand(command[:success_read], command[:success_read]), context)
 			# Un-parsed command string remains
 			else:
@@ -253,20 +282,24 @@ class Literal(ExecutableNode):
 	A literal argument, doesn't store any value, only for extending and readability of the command
 	The only argument type that is allowed to use the execute method
 	"""
-	def __init__(self, literal: str or Iterable[str]):
-		super().__init__(None)
-		if isinstance(literal, str):
-			literals = {literal}
-		elif isinstance(literal, Iterable):
-			literals = set(literal)
-		else:
-			raise TypeError('Only str or Iterable[str] is accepted')
+	def __init__(self, *literals: Union[str, Iterable[str]]):
+		_literals = []  # type: List[str]
 		for literal in literals:
-			if not isinstance(literal, str):
-				raise TypeError('Literal node only accepts str but {} found'.format(type(literal)))
-			if utils.DIVIDER in literal:
+			if isinstance(literal, str):
+				_literals.append(literal)
+			elif isinstance(literal, Iterable):
+				for _lit in literal:
+					if isinstance(_lit, str):
+						_literals.append(_lit)
+					else:
+						raise TypeError('Literal node only accepts str in iterable object but {} found'.format(type(_lit)))
+			else:
+				raise TypeError('Literal node only accepts str or Iterable[str] but {} found'.format(type(literal)))
+		for _literal in _literals:
+			if utils.DIVIDER in _literal:
 				raise TypeError('DIVIDER character "{}" cannot be inside a literal'.format(utils.DIVIDER))
-		self.literals = literals  # type: Set[str]
+		self.literals = set(_literals)
+		super().__init__(_literals[0])
 
 	def parse(self, text):
 		arg = utils.get_element(text)
