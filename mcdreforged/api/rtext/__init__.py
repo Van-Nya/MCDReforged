@@ -3,6 +3,6 @@
 from mcdreforged.minecraft.rtext import *
 
 __all__ = [
-	'RColor', 'RStyle', 'RAction',
+	'RColor', 'RStyle', 'RClickAction', 'RHoverAction',
 	'RTextBase', 'RText', 'RTextTranslation', 'RTextList'
 ]

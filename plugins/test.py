@@ -23,7 +23,7 @@ def register_help_message(server):
 	server.register_help_message('!!!error', 'What is 1/0?')
 	server.register_help_message('!!!status', 'Get server status')
 	server.register_help_message('!!!secret', 'get_plugin_instance() test')
-	server.register_help_message('!!!rtext', RText('rtext test').h('it', ' ', 'works', RText('?', styles=RStyle.obfuscated)))
+	server.register_help_message('!!!rtext', RText('rtext test').h(RHoverAction.show_text, 'it', ' ', 'works', RText('?', styles=RStyle.obfuscated)))
 	server.register_help_message('!!!plugin', 'plugin test')
 	server.register_help_message('!!!color', 'color test')
 	server.register_help_message('!!!logger', 'unique logger test')
@@ -108,20 +108,20 @@ pid: {}
 		server.reply(info, RText('RText!!', color=RColor.gold))
 		server.reply(
 			info,
-			RText('hover! ', color=RColor.aqua).set_hover_text('~~~') +
-			RText('click!', styles=RStyle.underlined).set_click_event(RAction.suggest_command, 'yes!')
+			RText('hover! ', color=RColor.aqua).set_hover_text(RHoverAction.show_text, '~~~') +
+			RText('click!', styles=RStyle.underlined).set_click_event(RClickAction.suggest_command, 'yes!')
 		)
 		server.reply(
 			info,
-			RText('More Test', color=RColor.light_purple, styles=[RStyle.italic, RStyle.underlined]).h('QwQ') +
+			RText('More Test', color=RColor.light_purple, styles=[RStyle.italic, RStyle.underlined]).h(RHoverAction.show_text, 'QwQ').i('qwq') +
 			'\nMinecraft §aC§bo§cl§do§er §r§lCode\n' +
 			RTextList(
-				RText('>>>>>>> Click me <<<<<<<\n').c(RAction.suggest_command, '!!!rtext').h(
-					RText('www', styles=[RStyle.obfuscated, RStyle.underlined]),
+				RText('>>>>>>> Click me <<<<<<<\n').c(RClickAction.suggest_command, '!!!rtext').h(
+					RHoverAction.show_text, RText('www', styles=[RStyle.obfuscated, RStyle.underlined]),
 					'<- guess what is this\n',
 					'tbh idk'
 				),
-				RText('Have you clicked§f that?', styles=RStyle.bold).h('stop lazy')
+				RText('Have you clicked§f that?', styles=RStyle.bold).h(RHoverAction.show_text, 'stop lazy')
 			)
 		)
 

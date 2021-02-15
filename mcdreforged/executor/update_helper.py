@@ -9,7 +9,7 @@ import requests
 
 from mcdreforged import constant
 from mcdreforged.executor.thread_executor import ThreadExecutor
-from mcdreforged.minecraft.rtext import RText, RAction, RColor, RStyle, RTextBase
+from mcdreforged.minecraft.rtext import RText, RClickAction, RHoverAction, RColor, RStyle, RTextBase
 from mcdreforged.utils import misc_util
 
 
@@ -48,8 +48,8 @@ class UpdateHelper(ThreadExecutor):
 					if 'documentation_url' in response:
 						reply_func(
 							RText(response['documentation_url'], color=RColor.blue, styles=RStyle.underlined)
-							.h(response['documentation_url'])
-							.c(RAction.open_url, response['documentation_url'])
+							.h(RHoverAction.show_text, response['documentation_url'])
+							.c(RClickAction.open_url, response['documentation_url'])
 						)
 			else:
 				try:

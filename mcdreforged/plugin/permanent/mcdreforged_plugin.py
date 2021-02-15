@@ -9,7 +9,7 @@ from mcdreforged import constant
 from mcdreforged.command.builder.command_node import Literal, QuotableText, Text, GreedyText, Integer
 from mcdreforged.command.builder.exception import UnknownArgument, RequirementNotMet, CommandError
 from mcdreforged.command.command_source import CommandSource
-from mcdreforged.minecraft.rtext import RText, RAction, RTextList, RStyle, RColor
+from mcdreforged.minecraft.rtext import RText, RClickAction, RHoverAction, RTextList, RStyle, RColor
 from mcdreforged.permission.permission_level import PermissionLevel
 from mcdreforged.plugin.meta.metadata import Metadata
 from mcdreforged.plugin.permanent.permanent_plugin import PermanentPlugin
@@ -150,7 +150,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 		for line in self.tr(translation_key).splitlines(keepends=True):
 			prefix = re.search(r'(?<=§7)!!MCDR[\w ]*(?=§)', line)
 			if prefix is not None:
-				lst.append(RText(line).c(RAction.suggest_command, prefix.group()))
+				lst.append(RText(line).c(RClickAction.suggest_command, prefix.group()))
 			else:
 				lst.append(line)
 		return lst
@@ -163,7 +163,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 		source.reply(
 			RText(self.tr('mcdr_command.command_not_found', command)).
 			h(self.tr('mcdr_command.command_not_found_suggest', command)).
-			c(RAction.run_command, command)
+			c(RClickAction.run_command, command)
 		)
 
 	FunctionCallResult = collections.namedtuple('FunctionCallResult', 'return_value no_error')
@@ -255,26 +255,26 @@ class MCDReforgedPlugin(PermanentPlugin):
 					'mcdr_command.list_permission.show_default',
 					self.mcdr_server.permission_manager.get_default_permission_level()
 				))
-				.c(RAction.suggest_command, '!!MCDR permission setdefault ')
-				.h(self.tr('mcdr_command.list_permission.suggest_setdefault'))
+				.c(RClickAction.suggest_command, '!!MCDR permission setdefault ')
+				.h(RHoverAction.show_text, self.tr('mcdr_command.list_permission.suggest_setdefault'))
 			)
 		for permission_level in PermissionLevel.INSTANCES:
 			if specified_level is None or permission_level == specified_level:
 				source.reply(
 					RText('§7[§e{}§7]§r'.format(permission_level.name))
-					.c(RAction.run_command, '!!MCDR permission list {}'.format(permission_level.name))
-					.h(self.tr('mcdr_command.list_permission.suggest_list', permission_level.name))
+					.c(RClickAction.run_command, '!!MCDR permission list {}'.format(permission_level.name))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_permission.suggest_list', permission_level.name))
 				)
 				for player in self.mcdr_server.permission_manager.get_permission_group_list(permission_level.name):
 					texts = RText('§7-§r {}'.format(player))
 					if self.can_see_rtext(source):
 						texts += RTextList(
 							RText(' [✎]', color=RColor.gray)
-							.c(RAction.suggest_command, '!!MCDR permission set {} '.format(string_util.auto_quotes(player)))
-							.h(self.tr('mcdr_command.list_permission.suggest_set', player)),
+							.c(RClickAction.suggest_command, '!!MCDR permission set {} '.format(string_util.auto_quotes(player)))
+							.h(RHoverAction.show_text, self.tr('mcdr_command.list_permission.suggest_set', player)),
 							RText(' [×]', color=RColor.gray)
-							.c(RAction.suggest_command, '!!MCDR permission remove {}'.format(string_util.auto_quotes(player)))
-							.h(self.tr('mcdr_command.list_permission.suggest_disable', player)),
+							.c(RClickAction.suggest_command, '!!MCDR permission remove {}'.format(string_util.auto_quotes(player)))
+							.h(RHoverAction.show_text, self.tr('mcdr_command.list_permission.suggest_disable', player)),
 						)
 					source.reply(texts)
 
@@ -302,13 +302,13 @@ class MCDReforgedPlugin(PermanentPlugin):
 		}
 
 		source.reply(RTextList(
-			RText(self.tr('mcdr_command.print_mcdr_status.line1', constant.NAME, constant.VERSION)).c(RAction.open_url, constant.GITHUB_URL).h(RText(constant.GITHUB_URL, styles=RStyle.underlined, color=RColor.blue)), '\n',
+			RText(self.tr('mcdr_command.print_mcdr_status.line1', constant.NAME, constant.VERSION)).c(RClickAction.open_url, constant.GITHUB_URL).h(RHoverAction.show_text, RText(constant.GITHUB_URL, styles=RStyle.underlined, color=RColor.blue)), '\n',
 			RText(self.tr('mcdr_command.print_mcdr_status.line2', self.tr(self.mcdr_server.mcdr_state.value))), '\n',
 			RText(self.tr('mcdr_command.print_mcdr_status.line3', self.tr(self.mcdr_server.server_state.value))), '\n',
 			RText(self.tr('mcdr_command.print_mcdr_status.line4', bool_formatter(self.mcdr_server.is_server_startup()))), '\n',
 			RText(self.tr('mcdr_command.print_mcdr_status.line5', bool_formatter(self.mcdr_server.is_exit_naturally()))), '\n',
 			RText(self.tr('mcdr_command.print_mcdr_status.line6', rcon_status_dict[self.mcdr_server.server_interface.is_rcon_running(is_plugin_call=False)])), '\n',
-			RText(self.tr('mcdr_command.print_mcdr_status.line7', len(self.mcdr_server.plugin_manager.plugins))).c(RAction.suggest_command, '!!MCDR plugin list')
+			RText(self.tr('mcdr_command.print_mcdr_status.line7', len(self.mcdr_server.plugin_manager.plugins))).c(RClickAction.suggest_command, '!!MCDR plugin list')
 		))
 		if source.has_permission(PermissionLevel.PHYSICAL_SERVER_CONTROL_LEVEL):
 			source.reply(RTextList(
@@ -343,23 +343,23 @@ class MCDReforgedPlugin(PermanentPlugin):
 			texts = RTextList(
 				'§7-§r ',
 				displayed_name.
-				c(RAction.run_command, '!!MCDR plugin info {}'.format(meta.id)).
-				h(self.tr('mcdr_command.list_plugin.suggest_info', meta.id))
+				c(RClickAction.run_command, '!!MCDR plugin info {}'.format(meta.id)).
+				h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_info', meta.id))
 			)
 			if self.can_see_rtext(source) and not plugin.is_permanent():
 				texts.append(
 					' ',
 					RText('[↻]', color=RColor.gray)
-					.c(RAction.run_command, '!!MCDR plugin reload {}'.format(meta.id))
-					.h(self.tr('mcdr_command.list_plugin.suggest_reload', meta.id)),
+					.c(RClickAction.run_command, '!!MCDR plugin reload {}'.format(meta.id))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_reload', meta.id)),
 					' ',
 					RText('[↓]', color=RColor.gray)
-					.c(RAction.run_command, '!!MCDR plugin unload {}'.format(meta.id))
-					.h(self.tr('mcdr_command.list_plugin.suggest_unload', meta.id)),
+					.c(RClickAction.run_command, '!!MCDR plugin unload {}'.format(meta.id))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_unload', meta.id)),
 					' ',
 					RText('[×]', color=RColor.gray)
-					.c(RAction.run_command, '!!MCDR plugin disable {}'.format(meta.id))
-					.h(self.tr('mcdr_command.list_plugin.suggest_disable', meta.id))
+					.c(RClickAction.run_command, '!!MCDR plugin disable {}'.format(meta.id))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_disable', meta.id))
 				)
 			source.reply(texts)
 
@@ -367,7 +367,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 			name = os.path.basename(fp)
 			name_text = RText(name)
 			if source.has_permission(PermissionLevel.PHYSICAL_SERVER_CONTROL_LEVEL):
-				name_text.h(fp)
+				name_text.h(RHoverAction.show_text, fp)
 			return name, name_text
 
 		source.reply(self.tr('mcdr_command.list_plugin.info_disabled_plugin', len(disabled_plugin_list)))
@@ -378,8 +378,8 @@ class MCDReforgedPlugin(PermanentPlugin):
 				texts.append(
 					' ',
 					RText('[✔]', color=RColor.gray)
-					.c(RAction.run_command, '!!MCDR plugin enable {}'.format(file_name))
-					.h(self.tr('mcdr_command.list_plugin.suggest_enable', file_name))
+					.c(RClickAction.run_command, '!!MCDR plugin enable {}'.format(file_name))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_enable', file_name))
 				)
 			source.reply(texts)
 
@@ -391,8 +391,8 @@ class MCDReforgedPlugin(PermanentPlugin):
 				texts.append(
 					' ',
 					RText('[↑]', color=RColor.gray)
-					.c(RAction.run_command, '!!MCDR plugin load {}'.format(file_name))
-					.h(self.tr('mcdr_command.list_plugin.suggest_load', file_name))
+					.c(RClickAction.run_command, '!!MCDR plugin load {}'.format(file_name))
+					.h(RHoverAction.show_text, self.tr('mcdr_command.list_plugin.suggest_load', file_name))
 				)
 			source.reply(texts)
 
@@ -403,7 +403,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 		else:
 			meta = plugin.get_metadata()
 			source.reply(RTextList(
-				meta.name.copy().set_color(RColor.yellow).set_styles(RStyle.bold).h(plugin),
+				meta.name.copy().set_color(RColor.yellow).set_styles(RStyle.bold).h(RHoverAction.show_text, plugin),
 				' ',
 				RText('v{}'.format(meta.version), color=RColor.gray)
 			))
@@ -411,7 +411,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 			if meta.author is not None:
 				source.reply('Authors: {}'.format(', '.join(meta.author)))
 			if meta.link is not None:
-				source.reply(RTextList('Link: ', RText(meta.link, color=RColor.blue, styles=RStyle.underlined).c(RAction.open_url, meta.link)))
+				source.reply(RTextList('Link: ', RText(meta.link, color=RColor.blue, styles=RStyle.underlined).c(RClickAction.open_url, meta.link)))
 			if meta.description is not None:
 				source.reply(meta.description)
 
@@ -493,7 +493,7 @@ class MCDReforgedPlugin(PermanentPlugin):
 			if 0 <= i < matched_count:
 				msg = matched[i]
 				source.reply(RTextList(
-					RText(msg.prefix, color=RColor.gray).c(RAction.suggest_command, msg.prefix),
+					RText(msg.prefix, color=RColor.gray).c(RClickAction.suggest_command, msg.prefix),
 					': ',
 					msg.message
 				))
@@ -504,10 +504,10 @@ class MCDReforgedPlugin(PermanentPlugin):
 			color = {False: RColor.dark_gray, True: RColor.gray}
 			prev_page = RText('<-', color=color[has_prev])
 			if has_prev:
-				prev_page.c(RAction.run_command, '!!help {}'.format(page - 1)).h(self.tr('mcdr_command.help_message.previous_page_hover'))
+				prev_page.c(RClickAction.run_command, '!!help {}'.format(page - 1)).h(RHoverAction.show_text, self.tr('mcdr_command.help_message.previous_page_hover'))
 			next_page = RText('->', color=color[has_next])
 			if has_next:
-				next_page.c(RAction.run_command, '!!help {}'.format(page + 1)).h(self.tr('mcdr_command.help_message.next_page_hover'))
+				next_page.c(RClickAction.run_command, '!!help {}'.format(page + 1)).h(RHoverAction.show_text, self.tr('mcdr_command.help_message.next_page_hover'))
 
 			source.reply(RTextList(
 				prev_page,

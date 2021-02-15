@@ -1,7 +1,7 @@
 import os
 from typing import List, TYPE_CHECKING
 
-from mcdreforged.minecraft.rtext import RTextList, RText, RAction, RTextBase
+from mcdreforged.minecraft.rtext import RTextList, RText, RClickAction, RHoverAction, RTextBase
 from mcdreforged.utils.exception import IllegalCallError
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ class PluginOperationResult:
 						text_list.append(ele if show_path else os.path.basename(ele))
 					else:
 						text_list.append(str(ele))
-				add_element(msg, RText(self.__mcdr_server.tr(key, len(lst))).h('\n'.join(text_list)))
+				add_element(msg, RText(self.__mcdr_server.tr(key, len(lst))).h(RHoverAction.show_text, '\n'.join(text_list)))
 
 		message = RTextList()
 		add_if_not_empty(message, list(filter(lambda plg: plg in self.dependency_check_result.success_list, self.load_result.success_list)), 'plugin_operation_result.info_loaded_succeeded')
@@ -81,7 +81,7 @@ class PluginOperationResult:
 			add_element(message, self.__mcdr_server.tr('plugin_operation_result.info_none'))
 		message.append(
 			RText(self.__mcdr_server.tr('plugin_operation_result.info_plugin_amount', len(self.__plugin_manager.plugins))).
-				h('\n'.join(map(str, self.__plugin_manager.plugins.values()))).
-				c(RAction.suggest_command, '!!MCDR plugin list')
+			h(RHoverAction.show_text, '\n'.join(map(str, self.__plugin_manager.plugins.values()))).
+			c(RClickAction.suggest_command, '!!MCDR plugin list')
 		)
 		return message

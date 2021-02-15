@@ -52,12 +52,18 @@ class RStyle(Enum):
 	obfuscated = RItem('§k', '')
 
 
-class RAction(Enum):
+class RClickAction(Enum):
 	suggest_command = auto()
 	run_command = auto()
 	open_url = auto()
 	open_file = auto()
 	copy_to_clipboard = auto()
+
+
+class RHoverAction(Enum):
+	show_text = auto()
+	show_item = auto()
+	show_entity = auto()
 
 
 class RTextBase:
@@ -82,17 +88,23 @@ class RTextBase:
 	def set_styles(self, styles: Union[RStyle, Iterable[RStyle]]) -> 'RTextBase':
 		raise NotImplementedError()
 
-	def set_click_event(self, action: RAction, value: str) -> 'RTextBase':
+	def set_click_event(self, action: RClickAction, value: str) -> 'RTextBase':
 		raise NotImplementedError()
 
-	def set_hover_text(self, *args) -> 'RTextBase':
+	def set_hover_text(self, action: RHoverAction, *args) -> 'RTextBase':
 		raise NotImplementedError()
 
-	def c(self, action: RAction, value: str) -> 'RTextBase':
+	def set_insertion(self, value: str) -> 'RTextBase':
+		raise NotImplementedError()
+
+	def c(self, action: RClickAction, value: str) -> 'RTextBase':
 		return self.set_click_event(action, value)
 
-	def h(self, *args) -> 'RTextBase':
-		return self.set_hover_text(*args)
+	def h(self, action: RHoverAction, *args) -> 'RTextBase':
+		return self.set_hover_text(action, *args)
+
+	def i(self, value) -> 'RTextBase':
+		return self.set_insertion(value)
 
 	def __str__(self):
 		return self.to_plain_text()
@@ -146,21 +158,25 @@ class RText(RTextBase):
 				self.data.pop(style.name)
 		return self
 
-	def set_click_event(self, action: RAction, value: str):
+	def set_click_event(self, action: RClickAction, value: str):
 		self.data['clickEvent'] = {
 			'action': action.name,
 			'value': value
 		}
 		return self
 
-	def set_hover_text(self, *args):
+	def set_hover_text(self, action: RHoverAction, *args):
 		self.data['hoverEvent'] = {
-			'action': 'show_text',
+			'action': action.name,
 			'value': {
 				'text': '',
 				'extra': RTextList(*args).to_json_object(),
 			}
 		}
+		return self
+
+	def set_insertion(self, value: str):
+		self.data['insertion'] = value
 		return self
 
 	def to_json_object(self):
@@ -214,13 +230,18 @@ class RTextList(RTextBase):
 		self.header_empty = False
 		return self
 
-	def set_click_event(self, action: RAction, value):
+	def set_click_event(self, action: RClickAction, value):
 		self.header.set_click_event(action, value)
 		self.header_empty = False
 		return self
 
-	def set_hover_text(self, *args):
-		self.header.set_hover_text(*args)
+	def set_hover_text(self, action: RHoverAction, *args):
+		self.header.set_hover_text(action, *args)
+		self.header_empty = False
+		return self
+
+	def set_insertion(self, value: str):
+		self.header.set_insertion(value)
 		self.header_empty = False
 		return self
 
