@@ -16,14 +16,16 @@ mcdr_server.kill_server.killing                     : Killing server process gro
 mcdr_server.kill_server.process_killed              : Process {0} killed
 mcdr_server.interrupt.hint                          : Interrupting, first strike = {0}
 mcdr_server.send.send_when_stopped                  : Server has been terminated, cannot send command to its stdin
+mcdr_server.send.send_when_stopped.text             : "Command being sent: {0}"
 mcdr_server.receive.wait_stop                       : Waiting for server process to stop
 mcdr_server.receive.decode_fail                     : Fail to decode text "{0}"
 mcdr_server.on_mcdr_start.console_disabled          : Console thread disabled
 mcdr_server.on_server_stop.show_stopcode            : Server process stopped with code {0}
 mcdr_server.tick.pre_parse_fail                     : Fail to pre parse text from stdout of the server, use original text
 mcdr_server.run.error                               : Error ticking MCDR
-mcdr_server.on_mcdr_stop.user_interrupted           : MCDR has been interrupted by user
-mcdr_server.on_mcdr_stop.server_stop                : Server stopped
+mcdr_server.on_server_stop.user_interrupted         : Server has been interrupted by user
+mcdr_server.on_server_stop.server_stop              : Server stopped
+mcdr_server.on_mcdr_stop.info                       : Stopping MCDR
 mcdr_server.on_mcdr_stop.bye                        : bye
 mcdr_server.on_mcdr_stop.stop_error                 : Error stopping MCDR, ignored that and exiting
 console_handler.parse_fail                          : Error parsing console command "{0}"
@@ -90,7 +92,7 @@ mcdr_command.print_mcdr_status.line1                  : "§l{0}§r version: §e{
 mcdr_command.print_mcdr_status.line2                  : "MCDR state: {0}"
 mcdr_command.print_mcdr_status.line3                  : "Server state: {0}"
 mcdr_command.print_mcdr_status.line4                  : "Server startup: {0}"
-mcdr_command.print_mcdr_status.line5                  : "Exit naturally: {0}"
+mcdr_command.print_mcdr_status.line5                  : "Exit after server stops: {0}"
 mcdr_command.print_mcdr_status.line6                  : "Rcon: {0}"
 mcdr_command.print_mcdr_status.line7                  : "Plugin count: §6{0}§r"
 mcdr_command.print_mcdr_status.extra_line1            : "Server PID: {0}"

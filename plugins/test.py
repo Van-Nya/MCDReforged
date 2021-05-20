@@ -34,7 +34,7 @@ def on_user_info(server: ServerInterface, info: Info):
 	if info.content == 'ping':
 		server.reply(info, 'pong')
 
-	if server.get_permission_level(info) == 3:
+	if server.get_permission_level(info) >= PermissionLevel.MCDR_CONTROL_LEVEL:
 		if info.content == '!!!start':
 			server.start()
 
@@ -48,7 +48,13 @@ def on_user_info(server: ServerInterface, info: Info):
 			server.restart()
 
 		if info.content == '!!!exit':
-			server.reply(info, 'success: {}'.format(server.exit()))
+			try:
+				server.exit()
+			except IllegalCallError:
+				success = False
+			else:
+				success = True
+			server.reply(info, 'success: {}'.format(success))
 
 	if info.source == 1 and info.content.startswith('!!!say '):
 		server.say(info.content[6:])

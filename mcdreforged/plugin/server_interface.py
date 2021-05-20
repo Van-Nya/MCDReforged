@@ -2,13 +2,14 @@
 An interface class for plugins to control the server
 """
 import functools
+import os
 import time
 from typing import Callable, TYPE_CHECKING, Tuple, Any, Union, Optional, List
 
 from mcdreforged.command.builder.command_node import Literal
-from mcdreforged.command.command_source import CommandSource
+from mcdreforged.command.command_source import CommandSource, PluginCommandSource
 from mcdreforged.info import Info
-from mcdreforged.mcdr_state import ServerState
+from mcdreforged.mcdr_state import MCDReforgedFlag
 from mcdreforged.minecraft.rtext import RTextBase, RText
 from mcdreforged.permission.permission_level import PermissionLevel
 from mcdreforged.plugin.meta.metadata import Metadata
@@ -84,7 +85,7 @@ class ServerInterface:
 		"""
 		Soft shutting down the server by sending the correct stop command to the server
 		"""
-		self.__mcdr_server.set_exit_naturally(False)
+		self.__mcdr_server.remove_flag(MCDReforgedFlag.EXIT_AFTER_STOP)
 		self.__mcdr_server.stop(forced=False)
 
 	@log_call
@@ -121,7 +122,7 @@ class ServerInterface:
 		"""
 		if self.__mcdr_server.is_server_running():
 			raise IllegalCallError('Cannot exit MCDR when the server is running')
-		self.__mcdr_server.set_server_state(ServerState.STOPPED)
+		self.__mcdr_server.with_flag(MCDReforgedFlag.EXIT_AFTER_STOP)
 
 	@log_call
 	def is_server_running(self) -> bool:
@@ -424,11 +425,30 @@ class ServerInterface:
 		:param on_executor_thread: If it's set to false. The event will be dispatched immediately no matter what the
 		current thread is
 		"""
-		if not isinstance(event, PluginEvent):
-			raise TypeError('Excepted {} but {} found'.format(PluginEvent, type(event)))
+		misc_util.check_type(event, PluginEvent)
 		if MCDRPluginEvents.contains_id(event.id):
 			raise ValueError('Cannot dispatch event with already exists event id {}'.format(event.id))
 		self.__mcdr_server.plugin_manager.dispatch_event(event, args, on_executor_thread=on_executor_thread)
+
+	# ------------------------
+	#      Plugin Utils
+	# ------------------------
+
+	@log_call
+	def get_data_folder(self) -> str:
+		"""
+		Return a unified data directory path for the current plugin
+		The path of the directory will be "config/plugin_id" where "plugin_id" is the id of the current plugin
+		If the directory does not exist, create it
+		:return: The path of the directory
+		:raise: IllegalCallError if it's not invoked in the task executor thread
+		"""
+		plugin = self.__get_current_plugin()
+		from mcdreforged.plugin.plugin_manager import PLUGIN_CONFIG_DIRECTORY
+		plugin_data_folder = os.path.join(PLUGIN_CONFIG_DIRECTORY, plugin.get_id())
+		if not os.path.isdir(plugin_data_folder):
+			os.makedirs(plugin_data_folder)
+		return plugin_data_folder
 
 	# ------------------------
 	#        Permission
@@ -466,6 +486,32 @@ class ServerInterface:
 		if level is None:
 			raise TypeError('Parameter level needs to be a permission related value')
 		self.__mcdr_server.permission_manager.set_permission_level(player, value)
+
+	# ------------------------
+	#         Command
+	# ------------------------
+
+	@log_call
+	def get_plugin_command_source(self) -> PluginCommandSource:
+		"""
+		Return a simple plugin command source for e.g. command execution
+		It's not player or console, it has maximum permission level, it use ServerInterface.logger for replying
+		"""
+		return PluginCommandSource(self)
+
+	@log_call
+	def execute_command(self, command: str, source: CommandSource = None) -> None:
+		"""
+		Execute a single command using the command system of MCDR
+		:param str command: The command you want to execute
+		:param CommandSource source: The command source that is used to execute the command. If it's not specified MCDR
+		will use ServerInterface.get_plugin_command_source as fallback command source
+		"""
+		if source is None:
+			source = self.get_plugin_command_source(is_plugin_call=False)
+		misc_util.check_type(command, str)
+		misc_util.check_type(source, CommandSource)
+		self.__mcdr_server.command_manager.execute_command(command, source)
 
 	# ------------------------
 	#           Misc
