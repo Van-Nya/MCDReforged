@@ -86,6 +86,16 @@ Exit MCDR when the server is stopped
 
 If the server is running return False otherwise return True
 
+Example usage:
+
+.. code-block:: python
+
+    server.stop()  # Stop the server
+    # do something A
+    server.wait_for_start()  # Make sure the server is fully stopped. It's necessary to run it in your custom thread
+    # do something B
+    server.exit()  # Exit MCDR
+
 is_server_running
 ~~~~~~~~~~~~~~~~~
 
@@ -421,6 +431,24 @@ In the event listener plugin
 
     server.register_event_listener('my_plugin.my_event', do_something)
 
+Plugin Utils
+^^^^^^^^^^^^
+
+get_data_folder
+~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    def get_data_folder(self) -> str
+
+Return a unified data directory path for the current plugin
+
+The path of the directory will be ``config/plugin_id`` where ``plugin_id`` is the id of the current plugin
+
+If the directory does not exist, create it
+
+Raise an ``IllegalCallError`` if it's not invoked in the task executor thread
+
 Permission
 ^^^^^^^^^^
 
@@ -451,6 +479,33 @@ Set the permission level of the given player. It raises ``TypeError`` if the val
 Parameter *player*: The name of the player that you want to set his/her permission level
 
 Parameter *value*: The target permission level you want to set the player to. It can be an int or a str as long as it's related to the permission level. Available examples: 1, '1', 'user'
+
+Command
+^^^^^^^
+
+get_plugin_command_source
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   get_plugin_command_source(self) -> PluginCommandSource
+
+Return a simple plugin command source for e.g. command execution
+
+It's not player or console, it has maximum permission level, it use `logger <#logger>`__ for replying
+
+execute_command
+~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   def execute_command(self, command: str, source: CommandSource = None) -> None
+
+Execute a single command using the command system of MCDR
+
+Parameter *command*: The command you want to execute
+
+Parameter *source*: The command source that is used to execute the command. If it's not specified MCDR will use `get_plugin_command_source <#get-plugin-command-source>`__ as fallback command source
 
 Misc
 ^^^^
